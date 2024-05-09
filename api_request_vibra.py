@@ -21,12 +21,12 @@ def main():
         response = requests.get (
             requestUrl,
             params = {
-                "token": os.getenv("TOKEN"),
-                "nome":  os.getenv("NOME"),
-                "subscription-key": os.getenv("SUBSCRIPTION-KEY")
+                "token": os.getenv("TOKEN_VIBRA"),
+                "nome":  os.getenv("NOME_VIBRA"),
+                "subscription-key": os.getenv("SUBSCRIPTION-KEY_VIBRA")
             },
             headers= {
-                "Authorization": os.getenv("AUTHORIZATION")
+                "Authorization": os.getenv("AUTHORIZATION_VIBRA")
             }
         )
 
@@ -37,16 +37,18 @@ def main():
             df = pd.read_excel(io.BytesIO(response.content))
             df = df.fillna('')
             df.insert(0, "DATAREF", timeStart)
-            conn, _ = databaseConnection()
+            conn, cursor = databaseConnection()
             engine = create_engine("mssql+pyodbc://", creator=lambda: conn)
 
             try:
+                cursor.execute("TRUNCATE TABLE AnaproVibra").commit()
+
                 df.to_sql("AnaproVibra", engine, if_exists="append", index=False)
                 print("Dados inseridos com sucesso na tabela AnaproVibra")
             except Exception as e:
                 print(f"Erro ao inserir dados na tabela AnaproVibra: {e}")
             finally:
-                closeConnection(conn, None)
+                closeConnection(conn, cursor)
 
         else:
             print("O conteúdo da resposta não é um arquivo .xlsx")
